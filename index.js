@@ -22,23 +22,29 @@ app.get('/', (req, res) => {
 io.on("connection", (socket) => {
 
 	socket.emit("yourID", socket.id);
-	console.log(socket.id);
-
-	socket.on("disconnect", () => {
-		socket.broadcast.emit("callEnded")
+	
+	socket.on("remoteId", ({from, to}) => {
+		io.to(to).emit("remoteId", from)
+	});
+	
+	socket.on("iceCandidate", ({ to, candidate }) => {
+		io.to(to).emit("remoteId", candidate)
+	});
+	
+	socket.on("offer", ({ to, offer }) => {
+		console.log('OffER');
+		io.to(to).emit("offer", {from:socket.id, offer})
+	});
+	
+	socket.on("answer", ({ to, answer }) => {
+		console.log('AnswER', to);
+		io.to(to).emit("answer", answer)
 	});
 
-	socket.on("exchangeID", ({ from, to }) => {
-		io.to(to).emit("exchangeID", { from });
+	socket.on("close", ({ to }) => {
+		io.to(to).emit("close", { close: 'now' })
 	});
 
-	socket.on("callUser", ({ userToCall, signalData }) => {
-		io.to(userToCall).emit("callUser", { signal: signalData });
-	});
-
-	socket.on("answerCall", (data) => {
-		io.to(data.to).emit("callAccepted", data.signal)
-	});
 });
 
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
